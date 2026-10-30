@@ -22,7 +22,7 @@ def setup_argparse():
     parser.add_argument("config_file", help="Path to the configuration file to lint.")
     parser.add_argument("-t", "--filetype", choices=['yaml', 'json'], help="Specify the file type (yaml or json).  If not specified, will attempt to determine from the file extension.", default=None)
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output (debug logging).")
-    parser.add_argument("-q", "--quiet", action="storetrue", help="Suppress all output except for errors.")
+    parser.add_argument("-q", "--quiet", action="store_true", help="Suppress all output except for errors.")
 
     return parser
 
