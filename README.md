@@ -1,3 +1,5 @@
+![Banner](banner.png)
+
 # misconfig-ConfigLinter
 Identifies stylistic or best-practice violations in configuration files (e.g., inconsistent indentation, deprecated directives, non-standard naming conventions). Leverages the 'flake8' or 'yamllint' libraries. - Focused on Check for misconfigurations in configuration files or infrastructure definitions
 
