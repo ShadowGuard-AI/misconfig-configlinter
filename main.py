@@ -18,7 +18,7 @@ def setup_argparse():
     Returns:
         argparse.ArgumentParser: The argument parser object.
     """
-    parser = argparse.ArgumentParser(description="misconfig-ConfigLinter: Identifies stylistic or best-practice violations in configuration files.")
+    parser = argparse.ArgumentParser(description="misconfig-ConfigLinter: Lints configuration files. YAML files are checked by the yamllint executable; JSON files are checked for valid syntax.")
     parser.add_argument("config_file", help="Path to the configuration file to lint.")
     parser.add_argument("-t", "--filetype", choices=['yaml', 'json'], help="Specify the file type (yaml or json).  If not specified, will attempt to determine from the file extension.", default=None)
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output (debug logging).")
@@ -47,7 +47,10 @@ def lint_yaml(config_file):
             return 0
         else:
             logging.error(f"YAML linting failed for {config_file}.")
-            print(result.stderr)
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print(result.stderr)
             return result.returncode
 
     except FileNotFoundError:
@@ -76,9 +79,16 @@ def lint_json(config_file):
                 logging.error(f"JSON decoding error in {config_file}: {e}")
                 print(f"JSON decoding error in {config_file}: {e}")
                 return 1
+    except FileNotFoundError:
+        logging.error(f"Config file not found: {config_file}")
+        return 1
+    except Exception as e:
+        logging.exception(f"An unexpected error occurred during JSON linting: {e}")
+        return 1
 
-        # If JSON is valid, run the json.tool to check formatting.
-        result = subprocess.run(["python", "-m", "json.tool", config_file], capture_output=True, text=True, check=False)
+    try:
+        # If JSON is valid, run json.tool with this same interpreter to check formatting.
+        result = subprocess.run([sys.executable, "-m", "json.tool", config_file], capture_output=True, text=True, check=False)
 
         if result.returncode == 0:
             logging.info(f"JSON linting successful for {config_file}.")
@@ -89,9 +99,8 @@ def lint_json(config_file):
             logging.error(f"JSON formatting check failed for {config_file}.")
             print(result.stderr)
             return result.returncode
-
     except FileNotFoundError:
-        logging.error(f"Config file not found: {config_file}")
+        logging.error(f"Could not run the Python interpreter '{sys.executable}' for the JSON formatting check.")
         return 1
     except Exception as e:
         logging.exception(f"An unexpected error occurred during JSON linting: {e}")
@@ -175,16 +184,16 @@ if __name__ == "__main__":
 # Usage Examples:
 #
 # 1. Lint a YAML file:
-#    python main.py config.yaml
+#    python3 main.py config.yaml
 #
 # 2. Lint a JSON file:
-#    python main.py config.json
+#    python3 main.py config.json
 #
 # 3. Specify the file type explicitly:
-#    python main.py config.txt -t yaml
+#    python3 main.py config.txt -t yaml
 #
 # 4. Enable verbose mode:
-#    python main.py config.yaml -v
+#    python3 main.py config.yaml -v
 #
 # 5. Suppress all output except for errors:
-#    python main.py config.yaml -q
+#    python3 main.py config.yaml -q
