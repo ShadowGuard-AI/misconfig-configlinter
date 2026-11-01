@@ -38,6 +38,12 @@ def lint_yaml(config_file):
         int: 0 if no errors, non-zero otherwise.
     """
     try:
+        # YAML gets a real linter with its default style rules, line
+        # length and trailing spaces included. JSON below gets a
+        # syntax parse and nothing else. The two halves of my tool
+        # therefore judge by different standards while presenting
+        # one name, and a style complaint fails a YAML run whose
+        # syntax is perfectly sound.
         result = subprocess.run(["yamllint", config_file], capture_output=True, text=True, check=False)
 
         if result.returncode == 0:
@@ -51,6 +57,10 @@ def lint_yaml(config_file):
                 print(result.stdout)
             if result.stderr:
                 print(result.stderr)
+            # My exit code is yamllint's own code handed straight to the
+            # caller in main. A missing yamllint binary, handled below,
+            # also returns 1, so from the exit code alone an environment
+            # problem and a file full of lint errors look identical.
             return result.returncode
 
     except FileNotFoundError:
@@ -88,6 +98,11 @@ def lint_json(config_file):
 
     try:
         # If JSON is valid, run json.tool with this same interpreter to check formatting.
+        # This second process parses the same file the load above
+        # just parsed, with the same rules, so it can only fail where
+        # the first parse already failed, which that branch returns
+        # from before reaching here. The step survives as a formatting
+        # check in name; in practice the verdict was settled above.
         result = subprocess.run([sys.executable, "-m", "json.tool", config_file], capture_output=True, text=True, check=False)
 
         if result.returncode == 0:
@@ -139,6 +154,11 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
         logging.debug("Verbose mode enabled.")
     if args.quiet:
+        # Quiet is applied after verbose in main, so passing both
+        # flags leaves the level here, at ERROR, whatever order the
+        # flags were typed in. The debug line just below this, written
+        # to announce quiet mode, is itself suppressed by the level
+        # it is announcing.
         logging.getLogger().setLevel(logging.ERROR)
         logging.debug("Quiet mode enabled.")
 
@@ -174,6 +194,11 @@ def main():
         print(f"Error: Unsupported file type: {filetype}")
         sys.exit(1)
 
+    # An empty YAML file passes yamllint and leaves through here
+    # with 0, a clean lint verdict on a file holding nothing,
+    # while an empty JSON file fails its decode above and exits
+    # 1. Nothing in the YAML path checks that there was content
+    # to lint.
     sys.exit(result)
 
 
